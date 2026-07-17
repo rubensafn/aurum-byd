@@ -1,15 +1,17 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { gsap } from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
 
 type Lockup = "endorsed" | "integrated" | "signature";
 type Scenario = "launch" | "premiere" | "always" | "owners";
 type Journey = "arrival" | "lobby" | "session" | "after";
 
 const lockups: Record<Lockup, { label: string; note: string }> = {
-  endorsed: { label: "Endorsed", note: "Recomendado — AURUM permanece como marca principal e BYD entra como chancela de futuro." },
-  integrated: { label: "Integrated", note: "Relação institucional equilibrada para fachada, sinalização permanente e apresentações corporativas." },
-  signature: { label: "AU Signature", note: "O eneagrama oficial AU cria uma assinatura compacta para aplicações digitais, brindes e experiências." },
+  endorsed: { label: "Masterbrand", note: "Recomendado — o wordmark AURUM permanece protagonista e a assinatura by BYD ocupa, com precisão, o lugar antes destinado a CINEMA." },
+  integrated: { label: "Horizontal", note: "Relação institucional equilibrada para fachada, sinalização permanente e apresentações corporativas, com respiro óptico entre todos os elementos." },
+  signature: { label: "AU Compact", note: "O eneagrama oficial AU cria uma assinatura compacta para aplicações digitais, brindes e experiências." },
 };
 
 const scenarios: Record<Scenario, { eyebrow: string; title: string; copy: string; items: string[] }> = {
@@ -26,22 +28,25 @@ const journeys: Record<Journey, { number: string; label: string; title: string; 
   after: { number: "04", label: "Depois", title: "A relação continua no digital.", copy: "App, CRM e conteúdo transformam cada visita em oportunidade de relacionamento.", points: ["Benefícios no app", "Conteúdo pós-sessão", "Convites e recorrência"] },
 };
 
-function OfficialLockup({ mode = "endorsed", compact = false }: { mode?: Lockup; compact?: boolean }) {
-  return <div className={`official-lockup lockup-${mode} ${compact ? "is-compact" : ""}`} aria-label="AURUM Cinema by BYD">
-    {mode === "signature" ? <img className="au-symbol" src="/brand/aurum-au.svg" alt="AURUM AU" /> : <img className="aurum-logo" src="/brand/aurum-logo.svg" alt="AURUM Cinema" />}
+function AurumEndorsedMark({ compact = false, tone = "light" }: { compact?: boolean; tone?: "light" | "dark" }) {
+  return <div className={`aurum-endorsed-mark ${compact ? "is-compact" : ""} tone-${tone}`} aria-label="AURUM by BYD">
+    <img className="aurum-wordmark" src="/brand/aurum-wordmark.svg" alt="AURUM" />
+    <span className="endorsement-line"><span>by</span><img className="byd-logo" src="/brand/byd-logo.svg" alt="BYD" /></span>
+  </div>;
+}
+
+function OfficialLockup({ mode = "endorsed", compact = false, bydTone = "red" }: { mode?: Lockup; compact?: boolean; bydTone?: "red" | "white" }) {
+  if (mode === "endorsed") return <div className={`official-lockup lockup-${mode} ${compact ? "is-compact" : ""}`}><AurumEndorsedMark compact={compact} /></div>;
+  return <div className={`official-lockup lockup-${mode} ${compact ? "is-compact" : ""}`} aria-label="AURUM by BYD">
+    {mode === "signature" ? <img className="au-symbol" src="/brand/aurum-au.svg" alt="AURUM AU" /> : <img className="aurum-wordmark" src="/brand/aurum-wordmark.svg" alt="AURUM" />}
+    <span className="brand-separator" aria-hidden="true" />
     <span className="brand-bridge">by</span>
-    <img className="byd-logo" src="/brand/byd-logo.svg" alt="BYD" />
+    <img className={`byd-logo byd-${bydTone}`} src="/brand/byd-logo.svg" alt="BYD" />
   </div>;
 }
 
 function Reveal({ children, className = "" }: { children: React.ReactNode; className?: string }) {
-  const ref = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    const el = ref.current; if (!el) return;
-    const observer = new IntersectionObserver(([entry]) => { if (entry.isIntersecting) { el.classList.add("revealed"); observer.disconnect(); } }, { threshold: .1 });
-    observer.observe(el); return () => observer.disconnect();
-  }, []);
-  return <div ref={ref} className={`reveal ${className}`}>{children}</div>;
+  return <div className={`reveal ${className}`}>{children}</div>;
 }
 
 const SectionHead = ({ number, eyebrow, title, italic }: { number: string; eyebrow: string; title: string; italic?: string }) => <Reveal className="section-head">
@@ -53,6 +58,111 @@ export default function Home() {
   const [scenario, setScenario] = useState<Scenario>("launch");
   const [journey, setJourney] = useState<Journey>("arrival");
   const [menuOpen, setMenuOpen] = useState(false);
+  const [introOpen, setIntroOpen] = useState(true);
+  const mainRef = useRef<HTMLElement>(null);
+  const introRef = useRef<HTMLDivElement>(null);
+  const introTimeline = useRef<gsap.core.Timeline | null>(null);
+
+  useLayoutEffect(() => {
+    if (!introOpen || !introRef.current) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      const frame = requestAnimationFrame(() => setIntroOpen(false));
+      return () => cancelAnimationFrame(frame);
+    }
+    const root = introRef.current;
+    document.body.classList.add("intro-locked");
+    const timeline = gsap.timeline({
+      defaults: { ease: "power3.out" },
+      onComplete: () => {
+        document.body.classList.remove("intro-locked");
+        setIntroOpen(false);
+      },
+    });
+    introTimeline.current = timeline;
+    timeline
+      .fromTo(root.querySelector(".intro-mark"), { autoAlpha: 0, scale: .88 }, { autoAlpha: 1, scale: 1, duration: .9 })
+      .fromTo(root.querySelectorAll(".intro-copy span"), { yPercent: 130 }, { yPercent: 0, duration: .8, stagger: .09 }, .28)
+      .fromTo(root.querySelector(".intro-progress i"), { scaleX: 0 }, { scaleX: 1, duration: 1.65, ease: "power2.inOut" }, .25)
+      .to(root.querySelector(".intro-sequence"), { autoAlpha: 0, y: -18, duration: .42 }, 2.18)
+      .to(root.querySelector(".intro-curtain-a"), { yPercent: -102, duration: 1.05, ease: "power4.inOut" }, 2.22)
+      .to(root.querySelector(".intro-curtain-b"), { yPercent: 102, duration: 1.05, ease: "power4.inOut" }, 2.22)
+      .to(root, { autoAlpha: 0, duration: .18 }, 3.12);
+    return () => {
+      timeline.kill();
+      document.body.classList.remove("intro-locked");
+    };
+  }, [introOpen]);
+
+  useLayoutEffect(() => {
+    if (introOpen || !mainRef.current) return;
+    gsap.registerPlugin(ScrollTrigger);
+    const root = mainRef.current;
+    const magneticCleanups: Array<() => void> = [];
+    document.documentElement.classList.add("motion-ready");
+    const ctx = gsap.context(() => {
+      gsap.fromTo(".hero h1 span", { yPercent: 115, rotate: 2 }, { yPercent: 0, rotate: 0, duration: 1.25, stagger: .09, ease: "power4.out" });
+      gsap.fromTo(".hero .kicker, .hero-copy, .hero .magnetic-cta, .scroll-cue", { autoAlpha: 0, y: 24 }, { autoAlpha: 1, y: 0, duration: .8, stagger: .08, delay: .45 });
+      gsap.to(".hero-image", { scale: 1.12, yPercent: 7, ease: "none", scrollTrigger: { trigger: ".hero", start: "top top", end: "bottom top", scrub: 1.2 } });
+      gsap.to(".red-orbit", { xPercent: 22, rotate: 16, ease: "none", scrollTrigger: { trigger: ".hero", start: "top top", end: "bottom top", scrub: 1 } });
+      gsap.to(".scroll-progress-fill", { scaleY: 1, ease: "none", scrollTrigger: { trigger: root, start: "top top", end: "bottom bottom", scrub: .35 } });
+
+      gsap.utils.toArray<HTMLElement>(".reveal").forEach((element) => {
+        gsap.fromTo(element, { autoAlpha: 0, y: 58, clipPath: "inset(0 0 12% 0)" }, {
+          autoAlpha: 1, y: 0, clipPath: "inset(0 0 0% 0)", duration: 1.05, ease: "power3.out",
+          scrollTrigger: { trigger: element, start: "top 88%", once: true },
+        });
+      });
+
+      gsap.utils.toArray<HTMLElement>(".section-head h2").forEach((heading) => {
+        gsap.fromTo(heading, { letterSpacing: "-.08em", xPercent: -4 }, { letterSpacing: "-.045em", xPercent: 0, ease: "none", scrollTrigger: { trigger: heading, start: "top 92%", end: "bottom 45%", scrub: .8 } });
+      });
+      gsap.fromTo(".space-card", { clipPath: "inset(16% 0 16% 0 round 28px)" }, { clipPath: "inset(0% 0 0% 0 round 28px)", stagger: .12, ease: "power3.out", scrollTrigger: { trigger: ".spatial-grid", start: "top 82%", end: "center 48%", scrub: .7 } });
+      gsap.to(".identity-monogram img", { rotate: 10, scale: 1.1, ease: "none", scrollTrigger: { trigger: ".identity-monogram", start: "top bottom", end: "bottom top", scrub: 1.1 } });
+      gsap.to(".hospitality-image", { backgroundPosition: "50% 65%", ease: "none", scrollTrigger: { trigger: ".hospitality", start: "top bottom", end: "bottom top", scrub: 1.2 } });
+      gsap.to(".media-orbit", { rotate: 4, ease: "none", scrollTrigger: { trigger: ".media-orbit", start: "top bottom", end: "bottom top", scrub: 1.4 } });
+      gsap.to(".media-orbit .orbit-item, .orbit-center", { rotate: -4, ease: "none", scrollTrigger: { trigger: ".media-orbit", start: "top bottom", end: "bottom top", scrub: 1.4 } });
+
+      const nav = root.querySelector(".nav-shell");
+      gsap.utils.toArray<HTMLElement>(".palette-shift, .journey, .audience, .roadmap").forEach((section) => {
+        ScrollTrigger.create({
+          trigger: section, start: "top 80px", end: "bottom 80px",
+          onEnter: () => nav?.classList.add("on-light"), onEnterBack: () => nav?.classList.add("on-light"),
+          onLeave: () => nav?.classList.remove("on-light"), onLeaveBack: () => nav?.classList.remove("on-light"),
+        });
+      });
+
+      const mm = gsap.matchMedia();
+      mm.add("(min-width: 901px)", () => {
+        const keys: Journey[] = ["arrival", "lobby", "session", "after"];
+        let currentStep = -1;
+        ScrollTrigger.create({
+          trigger: ".journey-shell", start: "top 12%", end: "+=2400", pin: true, scrub: .6, anticipatePin: 1,
+          onUpdate: (self) => {
+            const nextStep = Math.min(3, Math.floor(self.progress * 4));
+            if (nextStep !== currentStep) { currentStep = nextStep; setJourney(keys[nextStep]); }
+          },
+        });
+      });
+
+      const magnets = gsap.utils.toArray<HTMLElement>(".magnetic-cta");
+      magnets.forEach((element) => {
+        const move = (event: PointerEvent) => {
+          const bounds = element.getBoundingClientRect();
+          gsap.to(element, { x: (event.clientX - bounds.left - bounds.width / 2) * .14, y: (event.clientY - bounds.top - bounds.height / 2) * .18, duration: .45, ease: "power3.out" });
+        };
+        const leave = () => gsap.to(element, { x: 0, y: 0, duration: .65, ease: "elastic.out(1,.45)" });
+        element.addEventListener("pointermove", move);
+        element.addEventListener("pointerleave", leave);
+        magneticCleanups.push(() => { element.removeEventListener("pointermove", move); element.removeEventListener("pointerleave", leave); });
+      });
+    }, root);
+    ScrollTrigger.refresh();
+    return () => {
+      magneticCleanups.forEach((cleanup) => cleanup());
+      ctx.revert();
+      document.documentElement.classList.remove("motion-ready");
+    };
+  }, [introOpen]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -65,9 +175,17 @@ export default function Home() {
 
   const menu = [["#visao","Visão"],["#marca","Marca"],["#experiencia","Experiência"],["#negocio","Negócio"],["#roadmap","Roadmap"]];
 
-  return <main>
+  const skipIntro = () => introTimeline.current?.progress(1);
+
+  return <main ref={mainRef}>
+    {introOpen && <div className="intro" ref={introRef} role="dialog" aria-label="Introdução AURUM by BYD">
+      <div className="intro-curtain intro-curtain-a"/><div className="intro-curtain intro-curtain-b"/>
+      <div className="intro-sequence"><div className="intro-mark"><AurumEndorsedMark /></div><p className="intro-copy"><span>Cultura</span><span>Mobilidade</span><span>Futuro</span></p><div className="intro-progress"><i/></div><small>UMA NOVA EXPERIÊNCIA COMEÇA AGORA</small></div>
+      <button className="intro-skip" onClick={skipIntro}>Pular intro <span>↗</span></button>
+    </div>}
     <div className="grain" aria-hidden="true" />
-    <header className="nav-shell"><a href="#top" className="nav-brand"><OfficialLockup compact /></a><nav aria-label="Navegação principal">{menu.map(([href,label]) => <a key={href} href={href}>{label}</a>)}</nav><button className={`menu-button ${menuOpen ? "open" : ""}`} onClick={() => setMenuOpen(!menuOpen)} aria-label="Abrir menu" aria-expanded={menuOpen}><span/><span/></button></header>
+    <div className="scroll-progress" aria-hidden="true"><span>00</span><i><b className="scroll-progress-fill"/></i><span>16</span></div>
+    <header className="nav-shell"><a href="#top" className="nav-brand"><AurumEndorsedMark compact /></a><nav aria-label="Navegação principal">{menu.map(([href,label]) => <a key={href} href={href}>{label}</a>)}</nav><button className={`menu-button ${menuOpen ? "open" : ""}`} onClick={() => setMenuOpen(!menuOpen)} aria-label="Abrir menu" aria-expanded={menuOpen}><span/><span/></button></header>
     <div className={`menu-overlay ${menuOpen ? "open" : ""}`}>{menu.map(([href,label],i) => <a key={href} href={href} style={{transitionDelay:`${100+i*70}ms`}} onClick={() => setMenuOpen(false)}>{label}</a>)}</div>
 
     <section className="hero" id="top"><div className="hero-image" aria-hidden="true"/><div className="hero-shade" aria-hidden="true"/><div className="red-orbit" aria-hidden="true"/><div className="hero-content"><p className="kicker">Apresentação confidencial · Visão de sociedade</p><h1><span>O futuro da</span><span>experiência</span><span className="gold">cinematográfica</span><span>começa aqui.</span></h1><p className="hero-copy">Uma aliança entre cultura, mobilidade e tecnologia para construir o cinema premium mais desejado da região.</p><a className="magnetic-cta" href="#visao"><span>Entrar na visão</span><i>↘</i></a></div><div className="hero-index"><span>01</span><i/><small>16</small></div><a href="#visao" className="scroll-cue" aria-label="Continuar"><i/><span>SCROLL</span></a></section>
