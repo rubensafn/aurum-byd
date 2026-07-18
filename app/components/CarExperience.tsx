@@ -264,6 +264,7 @@ export default function CarExperience() {
       end: "bottom top",
       onToggle: (self) => {
         active = self.isActive;
+        host.classList.toggle("is-active", active);
         gsap.to(canvas, { opacity: active ? 1 : 0, duration: .55, ease: "power2.out" });
         cancelAnimationFrame(raf);
         if (active) renderFrame();
