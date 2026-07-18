@@ -35,7 +35,7 @@ function prepareCar(model: THREE.Group, isMobile: boolean): LoadedCar {
   const bounds = new THREE.Box3().setFromObject(model);
   const size = bounds.getSize(new THREE.Vector3());
   const center = bounds.getCenter(new THREE.Vector3());
-  const scale = (isMobile ? 2.85 : 4.75) / Math.max(size.x, size.y, size.z);
+  const scale = (isMobile ? 2.85 : 4.15) / Math.max(size.x, size.y, size.z);
   model.position.sub(center.multiplyScalar(scale));
   model.scale.setScalar(scale);
 
@@ -81,6 +81,9 @@ export default function CarExperience() {
     gsap.registerPlugin(ScrollTrigger);
 
     const isMobile = matchMedia("(max-width: 900px)").matches;
+    let compactLayout = isMobile;
+    let compactHeightScale = 1;
+    let compactStageY = isMobile ? .65 : 0;
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(isMobile ? 33 : 27, 1, .1, 100);
     camera.position.set(0, .9, isMobile ? 10.4 : 9.6);
@@ -140,7 +143,7 @@ export default function CarExperience() {
     scene.add(floor);
 
     const stage = new THREE.Group();
-    stage.position.y = isMobile ? .25 : -.35;
+    stage.position.y = isMobile ? .65 : 0;
     scene.add(stage);
 
     const loader = new GLTFLoader();
@@ -203,22 +206,25 @@ export default function CarExperience() {
       const middleChapter = vehicleProgress > .28 && vehicleProgress < .72;
       const side = middleChapter ? "left" : "right";
       if (host.dataset.side !== side) host.dataset.side = side;
-      const targetX = isMobile ? 0 : middleChapter ? -1.55 : 1.55;
+      const targetX = compactLayout ? 0 : middleChapter ? -1.25 : 1.25;
       stage.position.x += (targetX - stage.position.x) * .055;
+      const targetY = compactLayout ? compactStageY : 0;
+      stage.position.y += (targetY - stage.position.y) * .07;
 
       const activeCar = activeModelRef.current === "sealU" ? sealU : seal;
       const hotspot = HOTSPOTS.find((item) => item.id === selectedRef.current) ?? HOTSPOTS[0];
       focusPulseRef.current *= .93;
       focusLight.intensity += ((7 + focusPulseRef.current * 16) - focusLight.intensity) * .08;
       focusLight.position.lerp(new THREE.Vector3(...hotspot.light), .08);
-      camera.position.z += (((isMobile ? 10.4 : 9.6) - focusPulseRef.current * .75) - camera.position.z) * .07;
+      camera.position.z += (((compactLayout ? 10.4 : 9.6) - focusPulseRef.current * .75) - camera.position.z) * .07;
 
       if (activeCar) {
         const baseRotation = activeModelRef.current === "sealU" ? Math.PI * .32 : Math.PI * .72;
         const targetRotation = baseRotation + hotspot.angle + vehicleProgress * .36 + pointerX * .12;
         activeCar.root.rotation.y += (targetRotation - activeCar.root.rotation.y) * .055;
         activeCar.root.rotation.x += ((pointerY * .045) - activeCar.root.rotation.x) * .05;
-        const scale = 1 + Math.sin(vehicleProgress * Math.PI) * .025 + focusPulseRef.current * .025;
+        const responsiveScale = compactLayout === isMobile ? 1 : compactLayout ? 2.85 / 4.15 : 4.15 / 2.85;
+        const scale = responsiveScale * compactHeightScale * (1 + Math.sin(vehicleProgress * Math.PI) * .025 + focusPulseRef.current * .025);
         activeCar.root.scale.lerp(new THREE.Vector3(scale, scale, scale), .08);
       }
       renderer.render(scene, camera);
@@ -243,7 +249,7 @@ export default function CarExperience() {
 
     const progressTrigger = ScrollTrigger.create({
       trigger: ".vehicle-motion",
-      start: "top top",
+      start: "top -45%",
       end: "bottom bottom",
       onUpdate: (self) => {
         vehicleProgress = self.progress;
@@ -258,7 +264,7 @@ export default function CarExperience() {
       end: "bottom top",
       onToggle: (self) => {
         active = self.isActive;
-        gsap.to(host, { opacity: active ? 1 : 0, duration: .55, ease: "power2.out" });
+        gsap.to(canvas, { opacity: active ? 1 : 0, duration: .55, ease: "power2.out" });
         cancelAnimationFrame(raf);
         if (active) renderFrame();
       },
@@ -273,8 +279,12 @@ export default function CarExperience() {
     const resize = () => {
       const width = host.clientWidth;
       const height = host.clientHeight;
+      compactLayout = width <= 900;
+      compactHeightScale = compactLayout ? THREE.MathUtils.clamp(height / 760, .72, 1) : 1;
+      compactStageY = compactLayout && height < 700 ? .05 : .65;
       renderer.setSize(width, height, false);
       camera.aspect = width / Math.max(height, 1);
+      camera.fov = compactLayout ? 33 : 27;
       camera.updateProjectionMatrix();
       if (!active) renderer.render(scene, camera);
     };
@@ -325,7 +335,7 @@ export default function CarExperience() {
     </div>
     <aside className="car-inspector" aria-live="polite">
       <div><small>EXPLORE O VEÍCULO</small><strong>{selected.title}</strong><p>{selected.copy}</p></div>
-      <div className="car-component-tabs">{HOTSPOTS.map((item) => <button key={item.id} type="button" className={selectedHotspot === item.id ? "active" : ""} onClick={() => setSelectedHotspot(item.id)}>{item.label}</button>)}</div>
+      <div className="car-component-tabs">{HOTSPOTS.map((item) => <button key={item.id} type="button" className={selectedHotspot === item.id ? "active" : ""} aria-pressed={selectedHotspot === item.id} onClick={() => setSelectedHotspot(item.id)}>{item.label}</button>)}</div>
     </aside>
     <div className="car-model-wipe" aria-hidden="true"/>
   </div>;

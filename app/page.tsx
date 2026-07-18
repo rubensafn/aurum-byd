@@ -129,9 +129,11 @@ export default function Home() {
       gsap.utils.toArray<HTMLElement>(".motion-chapter").forEach((chapter, index) => {
         if (index === 0) {
           gsap.set(chapter.children, { y: 0, autoAlpha: 1 });
-          return;
+        } else {
+          gsap.fromTo(chapter, { autoAlpha: 0 }, { autoAlpha: 1, ease: "none", scrollTrigger: { trigger: chapter, start: "left 96%", end: "left 72%", containerAnimation: vehicleRail, scrub: .6 } });
+          gsap.fromTo(chapter.children, { y: 24, autoAlpha: .5 }, { y: 0, autoAlpha: 1, stagger: .04, ease: "none", scrollTrigger: { trigger: chapter, start: "left 88%", end: "left 68%", containerAnimation: vehicleRail, scrub: .7 } });
         }
-        gsap.fromTo(chapter.children, { y: 24, autoAlpha: .5 }, { y: 0, autoAlpha: 1, stagger: .04, ease: "none", scrollTrigger: { trigger: chapter, start: "left 88%", end: "left 68%", containerAnimation: vehicleRail, scrub: .7 } });
+        if (index < 2) gsap.to(chapter, { autoAlpha: 0, ease: "none", scrollTrigger: { trigger: chapter, start: "right 48%", end: "right 10%", containerAnimation: vehicleRail, scrub: .6 } });
       });
 
       ScrollTrigger.create({
@@ -147,14 +149,14 @@ export default function Home() {
       });
 
       gsap.utils.toArray<HTMLElement>(".reveal").forEach((element) => {
-        gsap.fromTo(element, { autoAlpha: 0, y: 58, clipPath: "inset(0 0 12% 0)" }, {
-          autoAlpha: 1, y: 0, clipPath: "inset(0 0 0% 0)", duration: 1.05, ease: "power3.out",
+        gsap.fromTo(element, { autoAlpha: 0, y: 42 }, {
+          autoAlpha: 1, y: 0, duration: .9, ease: "power3.out",
           scrollTrigger: { trigger: element, start: "top 88%", once: true },
         });
       });
 
       gsap.utils.toArray<HTMLElement>(".section-head h2").forEach((heading) => {
-        gsap.fromTo(heading, { letterSpacing: "-.08em", xPercent: -4 }, { letterSpacing: "-.045em", xPercent: 0, ease: "none", scrollTrigger: { trigger: heading, start: "top 92%", end: "bottom 45%", scrub: .8 } });
+        gsap.fromTo(heading, { y: 24, autoAlpha: .65 }, { y: 0, autoAlpha: 1, ease: "none", scrollTrigger: { trigger: heading, start: "top 92%", end: "bottom 58%", scrub: .7 } });
       });
       gsap.utils.toArray<HTMLElement>(".brand-family-card img").forEach((asset, index) => {
         gsap.fromTo(asset, { scale: .82, y: 26 + (index % 3) * 8, autoAlpha: .28 }, {
@@ -162,7 +164,7 @@ export default function Home() {
           scrollTrigger: { trigger: asset, start: "top 92%", end: "center 55%", scrub: .75 },
         });
       });
-      gsap.fromTo(".space-card", { clipPath: "inset(16% 0 16% 0 round 28px)" }, { clipPath: "inset(0% 0 0% 0 round 28px)", stagger: .12, ease: "power3.out", scrollTrigger: { trigger: ".spatial-grid", start: "top 82%", end: "center 48%", scrub: .7 } });
+      gsap.fromTo(".space-card", { scale: .975, autoAlpha: .65 }, { scale: 1, autoAlpha: 1, stagger: .1, ease: "power3.out", scrollTrigger: { trigger: ".spatial-grid", start: "top 86%", end: "center 52%", scrub: .65 } });
       gsap.to(".identity-monogram img", { rotate: 10, scale: 1.1, ease: "none", scrollTrigger: { trigger: ".identity-monogram", start: "top bottom", end: "bottom top", scrub: 1.1 } });
       gsap.to(".hospitality-image", { backgroundPosition: "50% 65%", ease: "none", scrollTrigger: { trigger: ".hospitality", start: "top bottom", end: "bottom top", scrub: 1.2 } });
       gsap.to(".media-orbit", { rotate: 4, ease: "none", scrollTrigger: { trigger: ".media-orbit", start: "top bottom", end: "bottom top", scrub: 1.4 } });
@@ -170,8 +172,8 @@ export default function Home() {
       gsap.to(".proof-word", { xPercent: -12, ease: "none", scrollTrigger: { trigger: ".proof", start: "top bottom", end: "bottom top", scrub: 1.1 } });
       gsap.fromTo(".palette-story", { scale: .94, y: 70 }, { scale: 1, y: 0, ease: "none", scrollTrigger: { trigger: ".palette-story", start: "top 92%", end: "center 58%", scrub: .8 } });
       gsap.utils.toArray<HTMLElement>(".space-card, .value-card, .deal-card").forEach((card, index) => {
-        gsap.fromTo(card, { y: 54 + (index % 2) * 18, rotateX: 4, transformPerspective: 900 }, {
-          y: 0, rotateX: 0, ease: "power2.out",
+        gsap.fromTo(card, { y: 34 + (index % 2) * 10, autoAlpha: .72 }, {
+          y: 0, autoAlpha: 1, ease: "power2.out",
           scrollTrigger: { trigger: card, start: "top 94%", end: "top 62%", scrub: .65 },
         });
       });
