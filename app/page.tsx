@@ -14,6 +14,27 @@ const lockups: Record<Lockup, { label: string; note: string }> = {
   signature: { label: "AU Compact", note: "O eneagrama oficial AU cria uma assinatura compacta para aplicações digitais, brindes e experiências." },
 };
 
+const officialLockups: Record<Lockup, { src: string; alt: string }> = {
+  endorsed: { src: "/brand/official/aurum-byd-unified-01.svg", alt: "Assinatura oficial AURUM by BYD unificada" },
+  integrated: { src: "/brand/official/aurum-byd-horizontal.svg", alt: "Assinatura oficial AURUM by BYD horizontal" },
+  signature: { src: "/brand/official/au-byd-unified-01.svg", alt: "Assinatura oficial AU by BYD compacta" },
+};
+
+const brandFamily = [
+  ["AURUM · Horizontal", "/brand/official/aurum-byd-horizontal.svg", "wide"],
+  ["AURUM · Unificada 01", "/brand/official/aurum-byd-unified-01.svg", "portrait"],
+  ["AURUM · Unificada 02", "/brand/official/aurum-byd-unified-02.svg", "portrait"],
+  ["AURUM · Unificada 03", "/brand/official/aurum-byd-unified-03.svg", "portrait"],
+  ["AURUM Cinema · Horizontal", "/brand/official/aurum-cinema-byd-horizontal.svg", "wide"],
+  ["AURUM Cinema · Unificada 01", "/brand/official/aurum-cinema-byd-unified-01.svg", "portrait"],
+  ["AURUM Cinema · Unificada 02", "/brand/official/aurum-cinema-byd-unified-02.svg", "portrait"],
+  ["AURUM Cinema · Unificada 03", "/brand/official/aurum-cinema-byd-unified-03.svg", "portrait"],
+  ["AU · Horizontal", "/brand/official/au-byd-horizontal.svg", "wide"],
+  ["AU · Unificada 01", "/brand/official/au-byd-unified-01.svg", "portrait"],
+  ["AU · Unificada 02", "/brand/official/au-byd-unified-02.svg", "portrait"],
+  ["AU · Unificada 03", "/brand/official/au-byd-unified-03.svg", "portrait"],
+] as const;
+
 const scenarios: Record<Scenario, { eyebrow: string; title: string; copy: string; items: string[] }> = {
   launch: { eyebrow: "01 — Lançamento", title: "O cinema vira palco de produto.", copy: "Uma noite proprietária para revelar veículos, tecnologia e visão de marca em ambiente imersivo.", items: ["Product stage no lobby", "Conteúdo na tela principal", "Test-drive e hospitalidade"] },
   premiere: { eyebrow: "02 — Première", title: "A BYD entra na cultura.", copy: "Estreias, talentos e convidados conectam a marca ao repertório cultural de Goiânia.", items: ["Naming da première", "Photo opportunity", "Conteúdo social e imprensa"] },
@@ -28,21 +49,18 @@ const journeys: Record<Journey, { number: string; label: string; title: string; 
   after: { number: "04", label: "Depois", title: "A relação continua no digital.", copy: "App, CRM e conteúdo transformam cada visita em oportunidade de relacionamento.", points: ["Benefícios no app", "Conteúdo pós-sessão", "Convites e recorrência"] },
 };
 
-function AurumEndorsedMark({ compact = false, tone = "light" }: { compact?: boolean; tone?: "light" | "dark" }) {
-  return <div className={`aurum-endorsed-mark ${compact ? "is-compact" : ""} tone-${tone}`} aria-label="AURUM by BYD">
-    <img className="aurum-wordmark" src="/brand/aurum-wordmark.svg" alt="AURUM" />
-    <span className="endorsement-line"><span>by</span><img className="byd-logo" src="/brand/byd-logo.svg" alt="BYD" /></span>
-  </div>;
+function BrandMark({ compact = false, vertical = false, inverse = false }: { compact?: boolean; vertical?: boolean; inverse?: boolean }) {
+  const prefix = inverse ? "/brand/official/white" : "/brand/official";
+  return <img
+    className={`official-brand-mark ${compact ? "is-compact" : ""} ${vertical ? "is-vertical" : ""}`}
+    src={vertical ? `${prefix}/aurum-byd-unified-01.svg` : `${prefix}/aurum-byd-horizontal.svg`}
+    alt="AURUM by BYD"
+  />;
 }
 
-function OfficialLockup({ mode = "endorsed", compact = false, bydTone = "red" }: { mode?: Lockup; compact?: boolean; bydTone?: "red" | "white" }) {
-  if (mode === "endorsed") return <div className={`official-lockup lockup-${mode} ${compact ? "is-compact" : ""}`}><AurumEndorsedMark compact={compact} /></div>;
-  return <div className={`official-lockup lockup-${mode} ${compact ? "is-compact" : ""}`} aria-label="AURUM by BYD">
-    {mode === "signature" ? <img className="au-symbol" src="/brand/aurum-au.svg" alt="AURUM AU" /> : <img className="aurum-wordmark" src="/brand/aurum-wordmark.svg" alt="AURUM" />}
-    <span className="brand-separator" aria-hidden="true" />
-    <span className="brand-bridge">by</span>
-    <img className={`byd-logo byd-${bydTone}`} src="/brand/byd-logo.svg" alt="BYD" />
-  </div>;
+function OfficialLockup({ mode = "endorsed", compact = false }: { mode?: Lockup; compact?: boolean }) {
+  const asset = officialLockups[mode];
+  return <img className={`official-lockup lockup-${mode} ${compact ? "is-compact" : ""}`} src={asset.src} alt={asset.alt} />;
 }
 
 function Reveal({ children, className = "" }: { children: React.ReactNode; className?: string }) {
@@ -116,20 +134,17 @@ export default function Home() {
       gsap.utils.toArray<HTMLElement>(".section-head h2").forEach((heading) => {
         gsap.fromTo(heading, { letterSpacing: "-.08em", xPercent: -4 }, { letterSpacing: "-.045em", xPercent: 0, ease: "none", scrollTrigger: { trigger: heading, start: "top 92%", end: "bottom 45%", scrub: .8 } });
       });
+      gsap.utils.toArray<HTMLElement>(".brand-family-card img").forEach((asset, index) => {
+        gsap.fromTo(asset, { scale: .82, y: 26 + (index % 3) * 8, autoAlpha: .28 }, {
+          scale: 1, y: 0, autoAlpha: 1, ease: "none",
+          scrollTrigger: { trigger: asset, start: "top 92%", end: "center 55%", scrub: .75 },
+        });
+      });
       gsap.fromTo(".space-card", { clipPath: "inset(16% 0 16% 0 round 28px)" }, { clipPath: "inset(0% 0 0% 0 round 28px)", stagger: .12, ease: "power3.out", scrollTrigger: { trigger: ".spatial-grid", start: "top 82%", end: "center 48%", scrub: .7 } });
       gsap.to(".identity-monogram img", { rotate: 10, scale: 1.1, ease: "none", scrollTrigger: { trigger: ".identity-monogram", start: "top bottom", end: "bottom top", scrub: 1.1 } });
       gsap.to(".hospitality-image", { backgroundPosition: "50% 65%", ease: "none", scrollTrigger: { trigger: ".hospitality", start: "top bottom", end: "bottom top", scrub: 1.2 } });
       gsap.to(".media-orbit", { rotate: 4, ease: "none", scrollTrigger: { trigger: ".media-orbit", start: "top bottom", end: "bottom top", scrub: 1.4 } });
       gsap.to(".media-orbit .orbit-item, .orbit-center", { rotate: -4, ease: "none", scrollTrigger: { trigger: ".media-orbit", start: "top bottom", end: "bottom top", scrub: 1.4 } });
-
-      const nav = root.querySelector(".nav-shell");
-      gsap.utils.toArray<HTMLElement>(".palette-shift, .journey, .audience, .roadmap").forEach((section) => {
-        ScrollTrigger.create({
-          trigger: section, start: "top 80px", end: "bottom 80px",
-          onEnter: () => nav?.classList.add("on-light"), onEnterBack: () => nav?.classList.add("on-light"),
-          onLeave: () => nav?.classList.remove("on-light"), onLeaveBack: () => nav?.classList.remove("on-light"),
-        });
-      });
 
       const mm = gsap.matchMedia();
       mm.add("(min-width: 901px)", () => {
@@ -180,12 +195,12 @@ export default function Home() {
   return <main ref={mainRef}>
     {introOpen && <div className="intro" ref={introRef} role="dialog" aria-label="Introdução AURUM by BYD">
       <div className="intro-curtain intro-curtain-a"/><div className="intro-curtain intro-curtain-b"/>
-      <div className="intro-sequence"><div className="intro-mark"><AurumEndorsedMark /></div><p className="intro-copy"><span>Cultura</span><span>Mobilidade</span><span>Futuro</span></p><div className="intro-progress"><i/></div><small>UMA NOVA EXPERIÊNCIA COMEÇA AGORA</small></div>
+      <div className="intro-sequence"><div className="intro-mark"><BrandMark vertical inverse /></div><p className="intro-copy"><span>Cultura</span><span>Mobilidade</span><span>Futuro</span></p><div className="intro-progress"><i/></div><small>UMA NOVA EXPERIÊNCIA COMEÇA AGORA</small></div>
       <button className="intro-skip" onClick={skipIntro}>Pular intro <span>↗</span></button>
     </div>}
     <div className="grain" aria-hidden="true" />
     <div className="scroll-progress" aria-hidden="true"><span>00</span><i><b className="scroll-progress-fill"/></i><span>16</span></div>
-    <header className="nav-shell"><a href="#top" className="nav-brand"><AurumEndorsedMark compact /></a><nav aria-label="Navegação principal">{menu.map(([href,label]) => <a key={href} href={href}>{label}</a>)}</nav><button className={`menu-button ${menuOpen ? "open" : ""}`} onClick={() => setMenuOpen(!menuOpen)} aria-label="Abrir menu" aria-expanded={menuOpen}><span/><span/></button></header>
+    <header className="nav-shell"><a href="#top" className="nav-brand"><BrandMark compact /></a><nav aria-label="Navegação principal">{menu.map(([href,label]) => <a key={href} href={href}>{label}</a>)}</nav><button className={`menu-button ${menuOpen ? "open" : ""}`} onClick={() => setMenuOpen(!menuOpen)} aria-label="Abrir menu" aria-expanded={menuOpen}><span/><span/></button></header>
     <div className={`menu-overlay ${menuOpen ? "open" : ""}`}>{menu.map(([href,label],i) => <a key={href} href={href} style={{transitionDelay:`${100+i*70}ms`}} onClick={() => setMenuOpen(false)}>{label}</a>)}</div>
 
     <section className="hero" id="top"><div className="hero-image" aria-hidden="true"/><div className="hero-shade" aria-hidden="true"/><div className="red-orbit" aria-hidden="true"/><div className="hero-content"><p className="kicker">Apresentação confidencial · Visão de sociedade</p><h1><span>O futuro da</span><span>experiência</span><span className="gold">cinematográfica</span><span>começa aqui.</span></h1><p className="hero-copy">Uma aliança entre cultura, mobilidade e tecnologia para construir o cinema premium mais desejado da região.</p><a className="magnetic-cta" href="#visao"><span>Entrar na visão</span><i>↘</i></a></div><div className="hero-index"><span>01</span><i/><small>16</small></div><a href="#visao" className="scroll-cue" aria-label="Continuar"><i/><span>SCROLL</span></a></section>
@@ -194,11 +209,11 @@ export default function Home() {
 
     <section className="convergence"><SectionHead number="02" eyebrow="Por que faz sentido" title="Duas marcas que falam" italic="sobre o amanhã."/><div className="convergence-grid">{[["Cultura","O AURUM transforma lançamentos em histórias e encontros memoráveis."],["Tecnologia","A BYD materializa inovação em produtos que já apontam para o futuro."],["Experiência","Ambas competem pelo encantamento, não apenas pela função."],["Cidade","O Oscar Niemeyer oferece um endereço com força arquitetônica e simbólica."]].map(([title,copy],i) => <Reveal className={`convergence-card convergence-${i+1}`} key={title}><span>0{i+1}</span><h3>{title}</h3><p>{copy}</p></Reveal>)}</div><div className="ticker" aria-label="Pilares da parceria"><div>AURUM × BYD · CULTURA × MOBILIDADE · CINEMA × TECNOLOGIA · EXPERIÊNCIA × FUTURO · </div></div></section>
 
-    <section className="brand-lab" id="marca"><Reveal className="brand-lab-head"><div><p className="section-number">03 / Arquitetura de marca</p><h2>Logos oficiais.<br/><em>Uma nova assinatura.</em></h2></div><p>O sistema respeita integralmente os desenhos oficiais. O trabalho está na relação, proporção, hierarquia e contexto de aplicação.</p></Reveal><div className={`lockup-stage stage-${lockup}`}><div className="stage-meta"><span>CO-BRAND SYSTEM · LOGOS OFICIAIS</span><span>{lockup === "endorsed" ? "PROPOSTA RECOMENDADA" : "APLICAÇÃO COMPLEMENTAR"}</span></div><OfficialLockup mode={lockup}/><p>{lockups[lockup].note}</p><div className="lockup-tabs" role="tablist" aria-label="Opções de assinatura">{(Object.keys(lockups) as Lockup[]).map((key,i) => <button role="tab" aria-selected={lockup === key} className={lockup === key ? "active" : ""} onClick={() => setLockup(key)} key={key}><small>0{i+1}</small>{lockups[key].label}</button>)}</div></div><p className="concept-note">Estudo conceitual de co-branding. Aplicações finais sujeitas às aprovações formais de ambas as marcas.</p></section>
+    <section className="brand-lab" id="marca"><Reveal className="brand-lab-head"><div><p className="section-number">03 / Arquitetura de marca</p><h2>Logos oficiais.<br/><em>Uma nova assinatura.</em></h2></div><p>O sistema respeita integralmente os desenhos oficiais. O trabalho está na relação, proporção, hierarquia e contexto de aplicação.</p></Reveal><div className={`lockup-stage stage-${lockup}`}><div className="stage-meta"><span>CO-BRAND SYSTEM · LOGOS OFICIAIS</span><span>{lockup === "endorsed" ? "ASSINATURA PRINCIPAL" : "APLICAÇÃO COMPLEMENTAR"}</span></div><OfficialLockup mode={lockup}/><p>{lockups[lockup].note}</p><div className="lockup-tabs" role="tablist" aria-label="Opções de assinatura">{(Object.keys(lockups) as Lockup[]).map((key,i) => <button role="tab" aria-selected={lockup === key} className={lockup === key ? "active" : ""} onClick={() => setLockup(key)} key={key}><small>0{i+1}</small>{lockups[key].label}</button>)}</div></div><Reveal className="brand-family-intro"><p className="section-number">Família completa</p><h3>Do naming arquitetônico<br/>ao menor ponto de contato.</h3><p>Doze assinaturas oficiais dão flexibilidade ao sistema sem abrir mão da consistência. O vermelho BYD pontua; branco, preto e dourado preservam a atmosfera premium.</p></Reveal><div className="brand-family-grid">{brandFamily.map(([label, src, format], index) => <Reveal className={`brand-family-card is-${format}`} key={src}><span>{String(index + 1).padStart(2, "0")}</span><img src={src} alt={label}/><small>{label}</small></Reveal>)}</div><p className="concept-note">Sistema de assinaturas oficiais. Aplicações em ambiente, mídia e comunicação sujeitas aos manuais e aprovações de ambas as marcas.</p></section>
 
     <section className="palette-shift"><SectionHead number="04" eyebrow="Evolução cromática" title="O vinho sai de cena." italic="O vermelho BYD entra em movimento."/><div className="palette-story"><Reveal className="palette-before"><div className="palette-label"><span>ANTES</span><b>Identidade AURUM</b></div><img src="/brand/aurum-palette-original.png" alt="Paleta original AURUM com preto, dourados, creme, vinho e verde escuro"/><p>O vinho cumpria o papel de calor e dramaticidade.</p></Reveal><div className="palette-arrow" aria-hidden="true">→</div><Reveal className="palette-after"><div className="palette-label"><span>AGORA</span><b>AURUM by BYD</b></div><div className="new-palette"><i className="swatch graphite"/><i className="swatch gold-one"/><i className="swatch gold-two"/><i className="swatch ivory"/><i className="swatch byd-red"/><i className="swatch deep-teal"/></div><p>O vermelho BYD assume tensão, energia, movimento e ação.</p></Reveal></div><div className="color-rules"><Reveal><b>Dourado</b><span>Prestígio, permanência e assinatura AURUM.</span></Reveal><Reveal><b>Vermelho BYD</b><span>Movimento, tecnologia, CTA e momentos de impacto.</span></Reveal><Reveal><b>Preto + creme</b><span>O palco neutro que mantém a experiência premium.</span></Reveal><Reveal><b>Princípio</b><span>Vermelho pontual. Luxo primeiro, energia na medida certa.</span></Reveal></div></section>
 
-    <section className="identity-system"><SectionHead number="05" eyebrow="Sistema vivo" title="Uma identidade preparada" italic="para ocupar espaços."/><div className="identity-grid"><Reveal className="identity-monogram"><img src="/brand/aurum-au.svg" alt="Eneagrama oficial AU"/><span>AU</span><p>O eneagrama vira selo de pertencimento para detalhes arquitetônicos, interface e hospitalidade.</p></Reveal><div className="identity-list">{[["01","Motion","A linha vermelha funciona como assinatura cinética entre capítulos e telas."],["02","Editorial","Cormorant sustenta sofisticação; a linguagem técnica organiza dados e argumentos."],["03","Digital","App, site, ingressos e CRM recebem um sistema conjunto — sem perder clareza."],["04","Physical","Fachada, lobby, sala, uniformes e materiais constroem a mesma percepção."]].map(([n,title,copy]) => <Reveal className="identity-row" key={n}><span>{n}</span><h3>{title}</h3><p>{copy}</p><i>↗</i></Reveal>)}</div></div></section>
+    <section className="identity-system"><SectionHead number="05" eyebrow="Sistema vivo" title="Uma identidade preparada" italic="para ocupar espaços."/><div className="identity-grid"><Reveal className="identity-monogram"><img src="/brand/official/au-byd-unified-01.svg" alt="Assinatura oficial AU by BYD"/><span>AU</span><p>O eneagrama vira selo de pertencimento para detalhes arquitetônicos, interface e hospitalidade.</p></Reveal><div className="identity-list">{[["01","Motion","A linha vermelha funciona como assinatura cinética entre capítulos e telas."],["02","Editorial","Cormorant sustenta sofisticação; a linguagem técnica organiza dados e argumentos."],["03","Digital","App, site, ingressos e CRM recebem um sistema conjunto — sem perder clareza."],["04","Physical","Fachada, lobby, sala, uniformes e materiais constroem a mesma percepção."]].map(([n,title,copy]) => <Reveal className="identity-row" key={n}><span>{n}</span><h3>{title}</h3><p>{copy}</p><i>↗</i></Reveal>)}</div></div></section>
 
     <section className="experience" id="experiencia"><SectionHead number="06" eyebrow="O cinema transformado" title="Da fachada à última cena," italic="uma presença integrada."/><div className="spatial-grid"><Reveal className="space-card space-card-large facade"><div className="space-label"><small>01</small><h3>Chegada</h3><p>Uma assinatura arquitetônica que transforma entrada e fachada em ícone.</p></div></Reveal><Reveal className="space-card lobby"><div className="space-label"><small>02</small><h3>Galeria</h3><p>Lobby como palco de produto, encontros e lançamentos.</p></div></Reveal><Reveal className="space-card auditorium"><div className="space-label"><small>03</small><h3>Imersão</h3><p>Sala e tela conectadas à narrativa da parceria.</p></div></Reveal></div><p className="concept-note light-note">Visualizações conceituais; não representam projeto arquitetônico executivo.</p></section>
 
@@ -218,10 +233,10 @@ export default function Home() {
 
     <section className="roadmap" id="roadmap"><SectionHead number="14" eyebrow="Roadmap" title="Uma transformação em" italic="quatro movimentos."/><div className="roadmap-line">{[["01","Alinhar","Estratégia, escopo societário, direitos e governança."],["02","Desenhar","Brand system, arquitetura, mídia e experiência digital."],["03","Lançar","Evento fundador, campanha, imprensa e primeira agenda."],["04","Escalar","Calendário always on, métricas e expansão do modelo."]].map(([n,title,copy]) => <Reveal className="roadmap-step" key={n}><span>{n}</span><i/><h3>{title}</h3><p>{copy}</p></Reveal>)}</div></section>
 
-    <section className="governance"><SectionHead number="15" eyebrow="Governança da marca" title="Grande impacto exige" italic="clareza de decisão."/><div className="governance-grid"><Reveal className="governance-main"><img src="/brand/aurum-logo.svg" alt="AURUM Cinema"/><i/><img src="/brand/byd-logo.svg" alt="BYD"/></Reveal><div className="governance-list">{[["Brand council","Aprovação conjunta de identidade, campanhas e aplicações permanentes."],["Experience calendar","Planejamento trimestral de estreias, eventos e oportunidades BYD."],["Performance review","KPIs de audiência, mídia, conteúdo, relacionamento e eventos."],["Protection","Regras de uso, exclusividade, território e integridade das marcas."]].map(([title,copy]) => <Reveal key={title}><h3>{title}</h3><p>{copy}</p></Reveal>)}</div></div></section>
+    <section className="governance"><SectionHead number="15" eyebrow="Governança da marca" title="Grande impacto exige" italic="clareza de decisão."/><div className="governance-grid"><Reveal className="governance-main"><img src="/brand/official/aurum-cinema-byd-horizontal.svg" alt="Assinatura institucional AURUM Cinema by BYD"/><p>Uma arquitetura oficial, administrada em conjunto.</p></Reveal><div className="governance-list">{[["Brand council","Aprovação conjunta de identidade, campanhas e aplicações permanentes."],["Experience calendar","Planejamento trimestral de estreias, eventos e oportunidades BYD."],["Performance review","KPIs de audiência, mídia, conteúdo, relacionamento e eventos."],["Protection","Regras de uso, exclusividade, território e integridade das marcas."]].map(([title,copy]) => <Reveal key={title}><h3>{title}</h3><p>{copy}</p></Reveal>)}</div></div></section>
 
     <section className="proof"><div className="proof-word">AURUM</div><Reveal><p className="section-number">16 / Por que agora</p><blockquote>“O futuro não precisa de mais uma tela.<br/>Precisa de um lugar onde possa ser vivido.”</blockquote><div className="proof-facts"><div><strong>Oscar Niemeyer</strong><span>Endereço cultural e arquitetura que inspira.</span></div><div><strong>Experiência premium</strong><span>Conforto, tecnologia e curadoria em um só destino.</span></div><div><strong>Plataforma recorrente</strong><span>Uma marca ativa todos os dias, não apenas em campanhas.</span></div></div></Reveal></section>
 
-    <footer><img className="footer-au" src="/brand/aurum-au.svg" alt="AU"/><p className="section-number">Próximo capítulo</p><h2>Vamos construir o cinema<br/>do <em>futuro.</em></h2><a className="magnetic-cta light-cta" href="mailto:contato@aurumcinema.com.br"><span>Iniciar a conversa</span><i>↗</i></a><div className="footer-row"><OfficialLockup compact/><span>Centro Cultural Oscar Niemeyer · Goiânia, GO</span><span>Apresentação confidencial · 2026</span></div></footer>
+    <footer><img className="footer-au" src="/brand/aurum-au.svg" alt="AU"/><p className="section-number">Próximo capítulo</p><h2>Vamos construir o cinema<br/>do <em>futuro.</em></h2><a className="magnetic-cta light-cta" href="mailto:contato@aurumcinema.com.br"><span>Iniciar a conversa</span><i>↗</i></a><div className="footer-row"><BrandMark compact/><span>Centro Cultural Oscar Niemeyer · Goiânia, GO</span><span>Apresentação confidencial · 2026</span></div></footer>
   </main>;
 }
