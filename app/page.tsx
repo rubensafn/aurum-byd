@@ -125,24 +125,24 @@ export default function Home() {
       gsap.to(".red-orbit", { xPercent: 22, rotate: 16, ease: "none", scrollTrigger: { trigger: ".hero", start: "top top", end: "bottom top", scrub: 1 } });
       gsap.to(".scroll-progress-fill", { scaleY: 1, ease: "none", scrollTrigger: { trigger: root, start: "top top", end: "bottom bottom", scrub: .35 } });
 
-      gsap.to(".vehicle-motion-rail", { xPercent: -66.666, ease: "none", scrollTrigger: { trigger: ".vehicle-motion", start: "top top", end: "bottom bottom", scrub: 1.15 } });
-      gsap.utils.toArray<HTMLElement>(".vehicle-word").forEach((word, index) => {
-        gsap.fromTo(word, { xPercent: index % 2 ? 24 : -24, autoAlpha: .12 }, { xPercent: 0, autoAlpha: 1, ease: "none", scrollTrigger: { trigger: word, start: "top bottom", end: "center 54%", scrub: .9 } });
-      });
-      gsap.utils.toArray<HTMLElement>(".motion-chapter").forEach((chapter) => {
-        gsap.fromTo(chapter, { autoAlpha: .22, filter: "blur(8px)" }, { autoAlpha: 1, filter: "blur(0px)", ease: "none", scrollTrigger: { trigger: chapter, start: "left 78%", end: "left 48%", containerAnimation: gsap.getTweensOf(".vehicle-motion-rail")[0], scrub: .7 } });
+      const vehicleRail = gsap.to(".vehicle-motion-rail", { xPercent: -66.666, ease: "none", scrollTrigger: { trigger: ".vehicle-motion", start: "top -45%", end: "bottom bottom", scrub: 1.15 } });
+      gsap.utils.toArray<HTMLElement>(".motion-chapter").forEach((chapter, index) => {
+        if (index === 0) {
+          gsap.set(chapter.children, { y: 0, autoAlpha: 1 });
+          return;
+        }
+        gsap.fromTo(chapter.children, { y: 24, autoAlpha: .5 }, { y: 0, autoAlpha: 1, stagger: .04, ease: "none", scrollTrigger: { trigger: chapter, start: "left 88%", end: "left 68%", containerAnimation: vehicleRail, scrub: .7 } });
       });
 
-      let lastScroll = 0;
       ScrollTrigger.create({
         start: 0,
         end: "max",
         onUpdate: (self) => {
           const shell = root.querySelector<HTMLElement>(".nav-shell");
-          if (!shell || self.scroll() < 100) return gsap.to(shell, { y: 0, duration: .45, overwrite: true });
-          const movingDown = self.scroll() > lastScroll;
-          gsap.to(shell, { y: movingDown ? -96 : 0, duration: .55, ease: "power3.out", overwrite: true });
-          lastScroll = self.scroll();
+          const backToTop = root.querySelector<HTMLElement>(".back-to-top");
+          shell?.classList.toggle("is-scrolled", self.scroll() > 72);
+          backToTop?.classList.toggle("is-visible", self.scroll() > innerHeight * .72);
+          backToTop?.style.setProperty("--page-progress", `${self.progress * 360}deg`);
         },
       });
 
@@ -167,6 +167,14 @@ export default function Home() {
       gsap.to(".hospitality-image", { backgroundPosition: "50% 65%", ease: "none", scrollTrigger: { trigger: ".hospitality", start: "top bottom", end: "bottom top", scrub: 1.2 } });
       gsap.to(".media-orbit", { rotate: 4, ease: "none", scrollTrigger: { trigger: ".media-orbit", start: "top bottom", end: "bottom top", scrub: 1.4 } });
       gsap.to(".media-orbit .orbit-item, .orbit-center", { rotate: -4, ease: "none", scrollTrigger: { trigger: ".media-orbit", start: "top bottom", end: "bottom top", scrub: 1.4 } });
+      gsap.to(".proof-word", { xPercent: -12, ease: "none", scrollTrigger: { trigger: ".proof", start: "top bottom", end: "bottom top", scrub: 1.1 } });
+      gsap.fromTo(".palette-story", { scale: .94, y: 70 }, { scale: 1, y: 0, ease: "none", scrollTrigger: { trigger: ".palette-story", start: "top 92%", end: "center 58%", scrub: .8 } });
+      gsap.utils.toArray<HTMLElement>(".space-card, .value-card, .deal-card").forEach((card, index) => {
+        gsap.fromTo(card, { y: 54 + (index % 2) * 18, rotateX: 4, transformPerspective: 900 }, {
+          y: 0, rotateX: 0, ease: "power2.out",
+          scrollTrigger: { trigger: card, start: "top 94%", end: "top 62%", scrub: .65 },
+        });
+      });
 
       const mm = gsap.matchMedia();
       mm.add("(min-width: 901px)", () => {
@@ -228,6 +236,9 @@ export default function Home() {
     </div>}
     <div className="grain" aria-hidden="true" />
     <div className="scroll-progress" aria-hidden="true"><span>00</span><i><b className="scroll-progress-fill"/></i><span>16</span></div>
+    <button className="back-to-top" type="button" onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })} aria-label="Voltar ao topo">
+      <span className="back-to-top-ring" aria-hidden="true"/><i aria-hidden="true">↑</i><small>TOPO</small>
+    </button>
     <header className="nav-shell"><a href="#top" className="nav-brand"><BrandMark compact /></a><nav aria-label="Navegação principal">{menu.map(([href,label]) => <a key={href} href={href}>{label}</a>)}</nav><button className={`menu-button ${menuOpen ? "open" : ""}`} onClick={() => setMenuOpen(!menuOpen)} aria-label={menuOpen ? "Fechar menu" : "Abrir menu"} aria-expanded={menuOpen} aria-controls="menu-principal"><span/><span/></button></header>
     <div id="menu-principal" className={`menu-overlay ${menuOpen ? "open" : ""}`} aria-hidden={!menuOpen}>{menu.map(([href,label],i) => <a key={href} href={href} style={{transitionDelay:`${100+i*70}ms`}} onClick={() => setMenuOpen(false)}>{label}</a>)}</div>
 
