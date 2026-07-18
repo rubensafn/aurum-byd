@@ -3,6 +3,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
+import CarExperience from "./components/CarExperience";
 
 type Lockup = "endorsed" | "integrated" | "signature";
 type Scenario = "launch" | "premiere" | "always" | "owners";
@@ -124,6 +125,27 @@ export default function Home() {
       gsap.to(".red-orbit", { xPercent: 22, rotate: 16, ease: "none", scrollTrigger: { trigger: ".hero", start: "top top", end: "bottom top", scrub: 1 } });
       gsap.to(".scroll-progress-fill", { scaleY: 1, ease: "none", scrollTrigger: { trigger: root, start: "top top", end: "bottom bottom", scrub: .35 } });
 
+      gsap.to(".vehicle-motion-rail", { xPercent: -66.666, ease: "none", scrollTrigger: { trigger: ".vehicle-motion", start: "top top", end: "bottom bottom", scrub: 1.15 } });
+      gsap.utils.toArray<HTMLElement>(".vehicle-word").forEach((word, index) => {
+        gsap.fromTo(word, { xPercent: index % 2 ? 24 : -24, autoAlpha: .12 }, { xPercent: 0, autoAlpha: 1, ease: "none", scrollTrigger: { trigger: word, start: "top bottom", end: "center 54%", scrub: .9 } });
+      });
+      gsap.utils.toArray<HTMLElement>(".motion-chapter").forEach((chapter) => {
+        gsap.fromTo(chapter, { autoAlpha: .22, filter: "blur(8px)" }, { autoAlpha: 1, filter: "blur(0px)", ease: "none", scrollTrigger: { trigger: chapter, start: "left 78%", end: "left 48%", containerAnimation: gsap.getTweensOf(".vehicle-motion-rail")[0], scrub: .7 } });
+      });
+
+      let lastScroll = 0;
+      ScrollTrigger.create({
+        start: 0,
+        end: "max",
+        onUpdate: (self) => {
+          const shell = root.querySelector<HTMLElement>(".nav-shell");
+          if (!shell || self.scroll() < 100) return gsap.to(shell, { y: 0, duration: .45, overwrite: true });
+          const movingDown = self.scroll() > lastScroll;
+          gsap.to(shell, { y: movingDown ? -96 : 0, duration: .55, ease: "power3.out", overwrite: true });
+          lastScroll = self.scroll();
+        },
+      });
+
       gsap.utils.toArray<HTMLElement>(".reveal").forEach((element) => {
         gsap.fromTo(element, { autoAlpha: 0, y: 58, clipPath: "inset(0 0 12% 0)" }, {
           autoAlpha: 1, y: 0, clipPath: "inset(0 0 0% 0)", duration: 1.05, ease: "power3.out",
@@ -199,6 +221,7 @@ export default function Home() {
       <button className="intro-skip" onClick={skipIntro}>Pular intro <span>↗</span></button>
     </div>}
     <div className="grain" aria-hidden="true" />
+    <CarExperience />
     <div className="scroll-progress" aria-hidden="true"><span>00</span><i><b className="scroll-progress-fill"/></i><span>16</span></div>
     <header className="nav-shell"><a href="#top" className="nav-brand"><BrandMark compact /></a><nav aria-label="Navegação principal">{menu.map(([href,label]) => <a key={href} href={href}>{label}</a>)}</nav><button className={`menu-button ${menuOpen ? "open" : ""}`} onClick={() => setMenuOpen(!menuOpen)} aria-label="Abrir menu" aria-expanded={menuOpen}><span/><span/></button></header>
     <div className={`menu-overlay ${menuOpen ? "open" : ""}`}>{menu.map(([href,label],i) => <a key={href} href={href} style={{transitionDelay:`${100+i*70}ms`}} onClick={() => setMenuOpen(false)}>{label}</a>)}</div>
@@ -206,6 +229,8 @@ export default function Home() {
     <section className="hero" id="top"><div className="hero-image" aria-hidden="true"/><div className="hero-shade" aria-hidden="true"/><div className="red-orbit" aria-hidden="true"/><div className="hero-content"><p className="kicker">Apresentação confidencial · Visão de sociedade</p><h1><span>O futuro da</span><span>experiência</span><span className="gold">cinematográfica</span><span>começa aqui.</span></h1><p className="hero-copy">Uma aliança entre cultura, mobilidade e tecnologia para construir o cinema premium mais desejado da região.</p><a className="magnetic-cta" href="#visao"><span>Entrar na visão</span><i>↘</i></a></div><div className="hero-index"><span>01</span><i/><small>16</small></div><a href="#visao" className="scroll-cue" aria-label="Continuar"><i/><span>SCROLL</span></a></section>
 
     <section className="statement" id="visao"><Reveal><p className="section-number">01 / A tese</p><h2>Não é apenas naming.<br/><em>É um ativo cultural vivo.</em></h2><div className="statement-grid"><p>O AURUM entrega contexto, frequência, repertório e experiência. A BYD adiciona inovação, escala e uma visão de futuro reconhecível.</p><p>Juntas, as marcas criam um território proprietário onde entretenimento e mobilidade se encontram — com valor para público, parceiros e investidores.</p></div></Reveal></section>
+
+    <section className="vehicle-motion" aria-label="Visualização 3D conceitual controlada pelo scroll"><div className="vehicle-motion-sticky"><div className="vehicle-motion-rail"><article className="motion-chapter"><p className="section-number">02 / Motion object</p><h2 className="vehicle-word">Forma que<br/><em>entra em cena.</em></h2><p>O automóvel deixa de ser exposição estática e passa a conduzir a narrativa — girando, aproximando e revelando suas camadas conforme o avanço da apresentação.</p><span>01 · PRESENÇA</span></article><article className="motion-chapter chapter-right"><p className="section-number">INTERAÇÃO</p><h2 className="vehicle-word">Tecnologia que<br/><em>se revela.</em></h2><p>Componentes se separam e voltam a formar um único objeto. Uma metáfora visual para a sociedade: ativos distintos construindo uma plataforma maior.</p><span>02 · ENGENHARIA</span></article><article className="motion-chapter"><p className="section-number">EXPERIÊNCIA</p><h2 className="vehicle-word">Movimento que<br/><em>gera desejo.</em></h2><p>Scroll, ponteiro e profundidade respondem com suavidade. O resultado é memorável sem competir com a clareza da proposta de negócio.</p><span>03 · FUTURO</span></article></div><div className="vehicle-counter"><span>CONCEITO 3D</span><i/><b>SCROLL TO ASSEMBLE</b></div></div><p className="vehicle-disclaimer">Visualização 3D conceitual para narrativa da apresentação. Não representa um modelo, produto ou especificação oficial BYD.</p></section>
 
     <section className="convergence"><SectionHead number="02" eyebrow="Por que faz sentido" title="Duas marcas que falam" italic="sobre o amanhã."/><div className="convergence-grid">{[["Cultura","O AURUM transforma lançamentos em histórias e encontros memoráveis."],["Tecnologia","A BYD materializa inovação em produtos que já apontam para o futuro."],["Experiência","Ambas competem pelo encantamento, não apenas pela função."],["Cidade","O Oscar Niemeyer oferece um endereço com força arquitetônica e simbólica."]].map(([title,copy],i) => <Reveal className={`convergence-card convergence-${i+1}`} key={title}><span>0{i+1}</span><h3>{title}</h3><p>{copy}</p></Reveal>)}</div><div className="ticker" aria-label="Pilares da parceria"><div>AURUM × BYD · CULTURA × MOBILIDADE · CINEMA × TECNOLOGIA · EXPERIÊNCIA × FUTURO · </div></div></section>
 
