@@ -8,31 +8,27 @@ import { ScrollTrigger } from "gsap/ScrollTrigger";
 
 const scenes = [
   {
-    eyebrow: "02 / Objeto em movimento",
-    title: "Presença que entra em cena.",
-    copy: "O BYD Seal U DM-i atravessa uma arquitetura de luz e transforma produto em narrativa.",
-    label: "CHEGADA",
+    eyebrow: "02 / Filme interativo",
+    title: "Presença em movimento.",
+    copy: "O BYD Seal U DM-i entra em cena. O seu scroll conduz cada enquadramento.",
     interactive: false,
   },
   {
     eyebrow: "Design em movimento",
-    title: "A forma começa a se revelar.",
-    copy: "Cada deslocamento abre um novo ângulo: superfície, proporção e tecnologia conduzidas pelo seu scroll.",
-    label: "DESIGN",
+    title: "Forma, luz e proporção.",
+    copy: "A carroceria se revela por ângulos precisos, sem interromper a narrativa.",
     interactive: false,
   },
   {
     eyebrow: "Interior interativo",
-    title: "Tecnologia que convida a entrar.",
-    copy: "Quando a cabine se abre, a experiência deixa de ser observada e passa a ser explorada.",
-    label: "INTERIOR",
+    title: "A cabine se abre.",
+    copy: "Neste momento, o interior pode ser explorado sem tirar o carro de cena.",
     interactive: true,
   },
   {
     eyebrow: "Visão de parceria",
-    title: "Movimento que gera desejo.",
-    copy: "Um produto cinematográfico dentro de uma plataforma cultural criada para relacionamento, conteúdo e valor.",
-    label: "FUTURO",
+    title: "Produto vira experiência.",
+    copy: "Cinema, mobilidade e tecnologia reunidos em uma plataforma de relacionamento.",
     interactive: false,
   },
 ] as const;
@@ -49,9 +45,11 @@ export default function ScrollVideoExperience() {
   const frameRef = useRef(0);
   const targetTimeRef = useRef(0);
   const sceneRef = useRef(0);
+  const lastSeekRef = useRef(0);
+  const primedRef = useRef(false);
   const [activeScene, setActiveScene] = useState(0);
   const [interiorOpen, setInteriorOpen] = useState(false);
-  const [videoReady, setVideoReady] = useState(false);
+  const [videoStatus, setVideoStatus] = useState<"loading" | "ready" | "error">("loading");
 
   useLayoutEffect(() => {
     const section = sectionRef.current;
@@ -60,11 +58,12 @@ export default function ScrollVideoExperience() {
 
     gsap.registerPlugin(ScrollTrigger);
     const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
-    if (reduceMotion) return;
+
+    let disposed = false;
 
     const loadTrigger = ScrollTrigger.create({
       trigger: section,
-      start: "top 160%",
+      start: "top 220%",
       once: true,
       onEnter: () => {
         video.preload = "auto";
@@ -72,12 +71,39 @@ export default function ScrollVideoExperience() {
       },
     });
 
-    const seek = () => {
+    if (reduceMotion) {
+      video.preload = "metadata";
+      return () => loadTrigger.kill();
+    }
+
+    const seek = (timestamp: number) => {
       frameRef.current = 0;
-      if (video.readyState < 2 || !Number.isFinite(video.duration)) return;
+      if (disposed || video.readyState < 2 || !Number.isFinite(video.duration)) return;
       const delta = Math.abs(video.currentTime - targetTimeRef.current);
-      if (delta > 0.035) video.currentTime = targetTimeRef.current;
+      if (!video.seeking && delta > 0.025 && timestamp - lastSeekRef.current > 48) {
+        lastSeekRef.current = timestamp;
+        const fastSeek = (video as HTMLVideoElement & { fastSeek?: (time: number) => void }).fastSeek;
+        if (delta > 0.25 && fastSeek) fastSeek.call(video, targetTimeRef.current);
+        else video.currentTime = targetTimeRef.current;
+      }
+      if (video.seeking || delta > 0.025) frameRef.current = requestAnimationFrame(seek);
     };
+
+    const queueSeek = () => {
+      if (!frameRef.current) frameRef.current = requestAnimationFrame(seek);
+    };
+    const onSeeked = () => queueSeek();
+    const onReady = () => {
+      setVideoStatus("ready");
+      if (!primedRef.current) {
+        primedRef.current = true;
+        const playAttempt = video.play();
+        playAttempt?.then(() => video.pause()).catch(() => undefined);
+      }
+      queueSeek();
+    };
+    video.addEventListener("seeked", onSeeked);
+    video.addEventListener("canplay", onReady, { once: true });
 
     const progressTrigger = ScrollTrigger.create({
       trigger: section,
@@ -93,7 +119,7 @@ export default function ScrollVideoExperience() {
         document.body.classList.toggle("video-active", inVideo);
         const duration = Number.isFinite(video.duration) ? video.duration : 32;
         targetTimeRef.current = Math.min(duration - 0.08, progress * duration);
-        if (!frameRef.current) frameRef.current = requestAnimationFrame(seek);
+        queueSeek();
 
         const nextScene = Math.min(scenes.length - 1, Math.floor(progress * scenes.length));
         if (nextScene !== sceneRef.current) {
@@ -106,7 +132,10 @@ export default function ScrollVideoExperience() {
     });
 
     return () => {
+      disposed = true;
       cancelAnimationFrame(frameRef.current);
+      video.removeEventListener("seeked", onSeeked);
+      video.removeEventListener("canplay", onReady);
       loadTrigger.kill();
       progressTrigger.kill();
       section.classList.remove("is-active");
@@ -117,24 +146,30 @@ export default function ScrollVideoExperience() {
   const scene = scenes[activeScene];
 
   return (
-    <section className={`scroll-video ${videoReady ? "is-ready" : ""}`} ref={sectionRef} aria-label="BYD Seal U DM-i em experiência controlada pelo scroll">
+    <section className={`scroll-video is-${videoStatus}`} ref={sectionRef} aria-label="BYD Seal U DM-i em experiência controlada pelo scroll">
       <div className="scroll-video-sticky">
         <video
           ref={videoRef}
           className="scroll-video-media"
           muted
           playsInline
-          preload="none"
+          preload="metadata"
           poster="/video/byd-scroll-poster.webp"
           onLoadedMetadata={() => {
             if (targetTimeRef.current > 0 && videoRef.current) videoRef.current.currentTime = targetTimeRef.current;
           }}
-          onLoadedData={() => setVideoReady(true)}
+          onCanPlay={() => setVideoStatus("ready")}
+          onStalled={() => setVideoStatus("loading")}
+          onError={() => setVideoStatus("error")}
           aria-hidden="true"
         >
           <source src="/video/byd-scroll-mobile.mp4" media="(max-width: 700px)" type="video/mp4" />
           <source src="/video/byd-scroll-desktop.mp4" type="video/mp4" />
         </video>
+        <div className="video-loading" role="status" aria-live="polite" aria-hidden={videoStatus === "ready"}>
+          <i aria-hidden="true" />
+          <span>{videoStatus === "error" ? "Não foi possível carregar o filme" : "Preparando o filme"}</span>
+        </div>
         <div className="scroll-video-shade" aria-hidden="true" />
 
         <LazyMotion features={domAnimation}>
@@ -195,7 +230,6 @@ export default function ScrollVideoExperience() {
           <i><b /></i>
           <strong>{String(activeScene + 1).padStart(2, "0")} / 04</strong>
         </div>
-        <div className="video-scene-label" aria-hidden="true">{scene.label}</div>
       </div>
     </section>
   );
