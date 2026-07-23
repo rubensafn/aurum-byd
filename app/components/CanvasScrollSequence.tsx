@@ -23,6 +23,7 @@ const CanvasScrollSequence = forwardRef<CanvasScrollSequenceHandle, Props>(funct
 ) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const targetRef = useRef(0);
+  const previousTargetRef = useRef(0);
   const drawFrameRef = useRef(0);
   const resizeFrameRef = useRef(0);
   const cacheRef = useRef(new Map<number, HTMLImageElement>());
@@ -41,10 +42,20 @@ const CanvasScrollSequence = forwardRef<CanvasScrollSequenceHandle, Props>(funct
   useImperativeHandle(ref, () => ({
     seek(progress) {
       const target = clamp(Math.round(progress * (frameCount - 1)), 0, frameCount - 1);
+      const direction = Math.sign(target - previousTargetRef.current) || 1;
+      previousTargetRef.current = target;
       targetRef.current = target;
-      const wanted = [target, target + 1, target - 1, target + 2, target - 2, target + 4, target - 4]
+      const wanted = [
+        target,
+        target + direction,
+        target + direction * 2,
+        target - direction,
+        target + direction * 4,
+        target - direction * 2,
+        target + direction * 7,
+      ]
         .filter((index) => index >= 0 && index < frameCount);
-      queuedRef.current = queuedRef.current.filter((index) => Math.abs(index - target) <= 4);
+      queuedRef.current = queuedRef.current.filter((index) => Math.abs(index - target) <= 7);
       wanted.reverse().forEach((index) => enqueueRef.current(index, true));
       scheduleDrawRef.current();
     },
@@ -59,6 +70,10 @@ const CanvasScrollSequence = forwardRef<CanvasScrollSequenceHandle, Props>(funct
 
     const target = targetRef.current;
     let image = cacheRef.current.get(target);
+    if (image) {
+      cacheRef.current.delete(target);
+      cacheRef.current.set(target, image);
+    }
     if (!image) {
       let nearestDistance = Number.POSITIVE_INFINITY;
       cacheRef.current.forEach((candidate, index) => {
@@ -160,7 +175,7 @@ const CanvasScrollSequence = forwardRef<CanvasScrollSequenceHandle, Props>(funct
     const resize = () => {
       resizeFrameRef.current = 0;
       const bounds = canvas.getBoundingClientRect();
-      const dprLimit = matchMedia("(max-width: 700px)").matches ? 1.5 : 2;
+      const dprLimit = matchMedia("(max-width: 700px)").matches ? 1.35 : 1.5;
       const dpr = Math.min(devicePixelRatio || 1, dprLimit);
       canvas.width = Math.max(1, Math.round(bounds.width * dpr));
       canvas.height = Math.max(1, Math.round(bounds.height * dpr));
