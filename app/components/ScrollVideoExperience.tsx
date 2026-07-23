@@ -5,6 +5,7 @@ import { AnimatePresence, LazyMotion, domAnimation, m } from "framer-motion";
 import { ArrowUpRight, BatteryCharging, Gauge, MonitorSmartphone, X } from "lucide-react";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
+import CanvasScrollSequence, { type CanvasScrollSequenceHandle } from "./CanvasScrollSequence";
 
 const scenes = [
   {
@@ -41,69 +42,23 @@ const features = [
 
 export default function ScrollVideoExperience() {
   const sectionRef = useRef<HTMLElement>(null);
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const frameRef = useRef(0);
-  const targetTimeRef = useRef(0);
+  const sequenceRef = useRef<CanvasScrollSequenceHandle>(null);
   const sceneRef = useRef(0);
-  const lastSeekRef = useRef(0);
-  const primedRef = useRef(false);
   const [activeScene, setActiveScene] = useState(0);
   const [interiorOpen, setInteriorOpen] = useState(false);
   const [videoStatus, setVideoStatus] = useState<"loading" | "ready" | "error">("loading");
 
   useLayoutEffect(() => {
     const section = sectionRef.current;
-    const video = videoRef.current;
-    if (!section || !video) return;
+    if (!section) return;
 
     gsap.registerPlugin(ScrollTrigger);
     const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-    let disposed = false;
-
-    const loadTrigger = ScrollTrigger.create({
-      trigger: section,
-      start: "top 220%",
-      once: true,
-      onEnter: () => {
-        video.preload = "auto";
-        video.load();
-      },
-    });
-
     if (reduceMotion) {
-      video.preload = "metadata";
-      return () => loadTrigger.kill();
+      sequenceRef.current?.seek(0);
+      return;
     }
-
-    const seek = (timestamp: number) => {
-      frameRef.current = 0;
-      if (disposed || video.readyState < 2 || !Number.isFinite(video.duration)) return;
-      const delta = Math.abs(video.currentTime - targetTimeRef.current);
-      if (!video.seeking && delta > 0.025 && timestamp - lastSeekRef.current > 48) {
-        lastSeekRef.current = timestamp;
-        const fastSeek = (video as HTMLVideoElement & { fastSeek?: (time: number) => void }).fastSeek;
-        if (delta > 0.25 && fastSeek) fastSeek.call(video, targetTimeRef.current);
-        else video.currentTime = targetTimeRef.current;
-      }
-      if (video.seeking || delta > 0.025) frameRef.current = requestAnimationFrame(seek);
-    };
-
-    const queueSeek = () => {
-      if (!frameRef.current) frameRef.current = requestAnimationFrame(seek);
-    };
-    const onSeeked = () => queueSeek();
-    const onReady = () => {
-      setVideoStatus("ready");
-      if (!primedRef.current) {
-        primedRef.current = true;
-        const playAttempt = video.play();
-        playAttempt?.then(() => video.pause()).catch(() => undefined);
-      }
-      queueSeek();
-    };
-    video.addEventListener("seeked", onSeeked);
-    video.addEventListener("canplay", onReady, { once: true });
 
     const progressTrigger = ScrollTrigger.create({
       trigger: section,
@@ -117,9 +72,7 @@ export default function ScrollVideoExperience() {
         const inVideo = progress > 0 && progress < 1;
         section.classList.toggle("is-active", inVideo);
         document.body.classList.toggle("video-active", inVideo);
-        const duration = Number.isFinite(video.duration) ? video.duration : 32;
-        targetTimeRef.current = Math.min(duration - 0.08, progress * duration);
-        queueSeek();
+        sequenceRef.current?.seek(progress);
 
         const nextScene = Math.min(scenes.length - 1, Math.floor(progress * scenes.length));
         if (nextScene !== sceneRef.current) {
@@ -132,11 +85,6 @@ export default function ScrollVideoExperience() {
     });
 
     return () => {
-      disposed = true;
-      cancelAnimationFrame(frameRef.current);
-      video.removeEventListener("seeked", onSeeked);
-      video.removeEventListener("canplay", onReady);
-      loadTrigger.kill();
       progressTrigger.kill();
       section.classList.remove("is-active");
       document.body.classList.remove("video-active");
@@ -148,24 +96,15 @@ export default function ScrollVideoExperience() {
   return (
     <section className={`scroll-video is-${videoStatus}`} ref={sectionRef} aria-label="BYD Seal U DM-i em experiência controlada pelo scroll">
       <div className="scroll-video-sticky">
-        <video
-          ref={videoRef}
+        <CanvasScrollSequence
+          ref={sequenceRef}
           className="scroll-video-media"
-          muted
-          playsInline
-          preload="metadata"
-          poster="/video/byd-scroll-poster.webp"
-          onLoadedMetadata={() => {
-            if (targetTimeRef.current > 0 && videoRef.current) videoRef.current.currentTime = targetTimeRef.current;
-          }}
-          onCanPlay={() => setVideoStatus("ready")}
-          onStalled={() => setVideoStatus("loading")}
+          frameCount={160}
+          desktopPath="/frames/byd/desktop"
+          mobilePath="/frames/byd/mobile"
+          onReady={() => setVideoStatus("ready")}
           onError={() => setVideoStatus("error")}
-          aria-hidden="true"
-        >
-          <source src="/video/byd-scroll-mobile.mp4" media="(max-width: 700px)" type="video/mp4" />
-          <source src="/video/byd-scroll-desktop.mp4" type="video/mp4" />
-        </video>
+        />
         <div className="video-loading" role="status" aria-live="polite" aria-hidden={videoStatus === "ready"}>
           <i aria-hidden="true" />
           <span>{videoStatus === "error" ? "Não foi possível carregar o filme" : "Preparando o filme"}</span>
